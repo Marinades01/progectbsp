@@ -69,33 +69,8 @@ for p=1:pages %for the pages
     end
 end
 
-%figure (1)
-%subplot 211
-%plot(f_rest(:,12,2),PSD_rest(:,12,2))
-%subplot 212
-%plot(f_calc(:,12,2),PSD_calc(:,12,2))
-
-%figure (2)
-%subplot 211
-%plot(f_rest(:,12,3),PSD_rest(:,12,3))
-%subplot 212
-%plot(f_calc(:,12,3),PSD_calc(:,12,3))
-
-%figure(3)
-%subplot 211
-%plot(f_rest(:,12,6),PSD_rest(:,12,6))
-%subplot 212
-%plot(f_calc(:,12,6),PSD_calc(:,12,6))
 
 %% DFA
-
-%EEG_rest
-% 1.integration of the signal for all the leads
-%for p=1:pages
-    %for j=1:columns
-        %EEG_rest_integ(:,j,p)=cumtrapz(EEG_rest_zeromean(:,j,p));
-    %end 
-%end
 
 % Let's consider 1 lead from 1 patient who is resting
 current_EEG(1,:) = EEG_rest_zeromean(:,1,1);
@@ -103,7 +78,7 @@ current_EEG(1,:) = EEG_rest_zeromean(:,1,1);
 segm_samples=ceil(linspace(200,900,15));
 Fn=zeros(length(segm_samples),1);
 for x=1:length(segm_samples)
-    x
+    
     N_EEG=length(current_EEG);
     n_segm=floor(N_EEG/segm_samples(x));
     N_new=n_segm*segm_samples(x);
@@ -138,47 +113,5 @@ end
 
 figure
 plot(n,Fn_log,'o')
-
-
-
-
-% 2. dividing the signal in sub-sequences
-%fitted=[];
-%n_sample=ceil(linspace(200,900,100));
-%for l=1:length(n_sample)
-%n_sample=500;
-    %[sub_sequences,n_sequences]=subsequences(current_EEG,n_sample(l));
-
-    %msd_matrix=zeros(n_sequences,1);
-    %polyn=[];
-    %for i=0:n_sequences-1
-        %corrente=sub_sequences(i+1,:);
-        
-        %coef_poly=polyfit(1:n_sample(l),corrente,1);
-       % polyn=[polyn; polyval(coef_poly,1:n_sample(l))];
-        
-        %msd_matrix(i+1) =mean((corrente-polyn(i+1)).^2,2); % mean-square_deviation
-    
-   % end
-    
-    %fitted=[fitted sqrt(mean(msd_matrix,1))];
-%end
-%n=log10(n_sample);
-%Fn=log10(fitted);
-
-%figure
-%plot(n,Fn,'o')
-%hold on
-%coef_fn=polyfit(n,Fn,1);
-%polyn_fn=polyval(coef_fn,n);
-%plot(polyn_fn)
-%hold off
-
-      
-   % end
- 
-%end
-
-
 
 
