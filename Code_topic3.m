@@ -70,48 +70,99 @@ for p=1:pages %for the pages
 end
 
 
-%% DFA
+%% DOWNSAMPLE (rest) 
 
-% Let's consider 1 lead from 1 patient who is resting
-current_EEG(1,:) = EEG_rest_zeromean(:,1,1);
-
-segm_samples=ceil(linspace(200,900,15));
-Fn=zeros(length(segm_samples),1);
-for x=1:length(segm_samples)
-    
-    N_EEG=length(current_EEG);
-    n_segm=floor(N_EEG/segm_samples(x));
-    N_new=n_segm*segm_samples(x);
-    fit_order=1;
-    % 1. calcolo la media del segmento
-    mean_segm=mean(current_EEG(1:N_new));
-
-    % 2. tolgo la media da ogni singolo punto e "integreted"
-    y=zeros(N_new,1);
-    for i=1:N_new
-        y(i)=sum(current_EEG(1:i)-mean_segm);
+% LP filter at 60Hz (because we can see that the range is up to about 50 Hz)
+for p=1:size(EEG_rest_zeromean,3)
+    for j=1:size(EEG_rest_zeromean,2)
+        EEG_rest_lp(:,j,p) = lowpass(EEG_rest_zeromean(:,j,p), 60, Fs);
+        EEG_rest_ds(:,j,p) = downsample(EEG_rest_lp(:,j,p), 110);
     end
+end
+% we saw what's the last significant component in freq and chose a
+% sampling freq (with the theorem) to downsample the signal keeping only
+% the significant samples and shortening the processing time
+% the new Fs (with respect to the original signal given) is 
+% Fs_new = Fs*fs = 500*110 = 55000 Hz (actually not needed)
 
-    % 3. considero un segmento per volta e calcolo i coeff del polinomio
-    fitcoeff=zeros(n_segm,fit_order+1);
-    fitcurve=zeros(N_new,1);
-    for j=1:n_segm
-    fitcoeff(j,:)=polyfit(1:segm_samples(x),y((j-1)*segm_samples(x)+1:j*segm_samples(x)),fit_order);
-     % 4. calcolo la retta per ogni segmento
-    fitcurve((j-1)*segm_samples(x)+1:j*segm_samples(x))=polyval(fitcoeff(j,:),1:segm_samples(x));
-    end
+%% DFA (rest)
+segm_samples=[4 8 16 32 64 128 256]; % numero di sample per segmento (da far ruotare nel ciclo)
+fit_order = 1;
 
-    
-    % 5. calcolo msd e ne prendo la radice quadrata
-    msd= sum((y-fitcurve).^2)/N_new;
-    Fn(x)=sqrt(msd);
+for p=1:size(EEG_rest_ds,3)
+    for j=1:size(EEG_rest_ds,2)
+        current_EEG_rest(1,:) = EEG_rest_ds(:,j,p);
+        Fn_rest = DFA(current_EEG_rest, segm_samples, fit_order);
+        
+        % 6. calcolo la retta di interpolazione di Fn(n) (in scala
+        % logaritmica)
+        n=log10(segm_samples);
+        Fn_log=log10(Fn_rest);
+        fn_coeff = polyfit(n,Fn_log, 1);
+        fn_fit = polyval(fn_coeff,n);
+
+        % 7. calcolo lo slope delle rette ottenute
+        maxy = max(fn_fit);
+        miny = min(fn_fit);
+        if miny<abs(miny)
+            y_slope = maxy + abs(miny);
+        else
+            y_slope = maxy - miny;
+        end 
+        x_slope = n(end) - n(1);
+        slope_rest(j,p) = y_slope/x_slope;               
+    end 
 end
 
-
-    n=log10(segm_samples);
-    Fn_log=log10(Fn);
-
-figure
-plot(n,Fn_log,'o')
+% figure
+% plot(n,Fn_log,'o')
+% hold on
+% plot(n,fn_fit)
 
 
+%% DOWNSAMPLE (calc) 
+
+% LP filter at 60Hz (because we can see that the range is up to about 50 Hz)
+for p=1:size(EEG_calc_zeromean,3)
+    for j=1:size(EEG_calc_zeromean,2)
+        EEG_calc_lp(:,j,p) = lowpass(EEG_calc_zeromean(:,j,p), 60, Fs);
+        EEG_calc_ds(:,j,p) = downsample(EEG_calc_lp(:,j,p), 110);
+    end
+end
+% we saw what's the last significant component in freq and chose a
+% sampling freq (with the theorem) to downsample the signal keeping only
+% the significant samples and shortening the processing time
+% the new Fs (with respect to the original signal given) is 
+% Fs_new = Fs*fs = 500*110 = 55000 Hz (actually not needed)
+
+%% DFA (calc)
+
+for p=1:size(EEG_calc_ds,3)
+    for j=1:size(EEG_calc_ds,2)
+        current_EEG_calc(1,:) = EEG_calc_ds(:,j,p);
+        Fn_calc = DFA(current_EEG_calc, segm_samples, fit_order);
+        
+        % 6. calcolo la retta di interpolazione di Fn(n) (in scala
+        % logaritmica)
+        n=log10(segm_samples);
+        Fn_log=log10(Fn_calc);
+        fn_coeff = polyfit(n,Fn_log, 1);
+        fn_fit = polyval(fn_coeff,n);
+
+        % 7. calcolo lo slope delle rette ottenute
+        maxy = max(fn_fit);
+        miny = min(fn_fit);
+        if miny<abs(miny)
+            y_slope = maxy + abs(miny);
+        else
+            y_slope = maxy - miny;
+        end 
+        x_slope = n(end) - n(1);
+        slope_calc(j,p) = y_slope/x_slope;               
+    end 
+end
+
+% figure
+% plot(n,Fn_log,'o')
+% hold on
+% plot(n,fn_fit)
