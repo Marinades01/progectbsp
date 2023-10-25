@@ -17,6 +17,8 @@ EEG_calc(:,:,4)=struct2array(load("Data/Subject05_2.mat"));
 EEG_calc(:,:,5)=struct2array(load("Data/Subject07_2.mat"));
 EEG_calc(:,:,6)=struct2array(load("Data/Subject08_2.mat"));
 
+load helper_code/chanlocs.mat
+
 Fs=500;
 
 
@@ -166,3 +168,5 @@ end
 % plot(n,Fn_log,'o')
 % hold on
 % plot(n,fn_fit)
+
+topoplot('example')
